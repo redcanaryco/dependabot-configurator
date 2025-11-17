@@ -1,0 +1,17 @@
+name: Dependabot Configurator
+on:
+  schedule:
+    - cron: "0 10 * * 5" # Runs every Friday at 10:00 UTC
+  workflow_dispatch:
+
+jobs:
+  dependabot-configurator:
+    # CUSTOMIZE: Update this to point to your organization's fork
+    # Change 'YOUR_ORG' to your organization name (e.g., 'acme-corp')
+    uses: YOUR_ORG/dependabot-configurator/.github/workflows/dependabot-configurator-reusable-workflow.yml@main
+    with:
+      MAIN_BRANCH: ${{ github.ref_name }}
+      OPEN_PULL_REQUESTS_LIMIT: 1 # Set your desired limit. This applies to version updates only. 0 is none.
+    secrets:
+      ORG_CONFIGURATOR_APP_ID: ${{ secrets.ORG_CONFIGURATOR_APP_ID }}
+      ORG_CONFIGURATOR_APP_PRIVATE_KEY: ${{ secrets.ORG_CONFIGURATOR_APP_PRIVATE_KEY }}

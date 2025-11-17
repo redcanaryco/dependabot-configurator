@@ -1,0 +1,166 @@
+version: 2
+updates:
+  #  / pip version updates
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 1
+    groups:
+      pip_updates:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    target-branch: main
+    labels:
+      - version-update
+      - dependencies
+  #  / pip security updates
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 0
+    labels:
+      - security-update
+      - dependencies
+    groups:
+      prodsec:
+        applies-to: security-updates
+        update-types:
+          - minor
+          - patch
+  #  .github/workflows github-actions version updates
+  - package-ecosystem: github-actions
+    directory: /.github/workflows
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 1
+    groups:
+      github_actions_updates:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    target-branch: main
+    labels:
+      - version-update
+      - dependencies
+  #  .github/workflows github-actions security updates
+  - package-ecosystem: github-actions
+    directory: /.github/workflows
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 0
+    labels:
+      - security-update
+      - dependencies
+    groups:
+      prodsec:
+        applies-to: security-updates
+        update-types:
+          - minor
+          - patch
+  #  app/dependabot-configurator pip version updates
+  - package-ecosystem: pip
+    directory: /app/dependabot-configurator
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 1
+    groups:
+      pip_updates:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    target-branch: main
+    labels:
+      - version-update
+      - dependencies
+  #  app/dependabot-configurator pip security updates
+  - package-ecosystem: pip
+    directory: /app/dependabot-configurator
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 0
+    labels:
+      - security-update
+      - dependencies
+    groups:
+      prodsec:
+        applies-to: security-updates
+        update-types:
+          - minor
+          - patch
+  #  templates/workflows github-actions version updates
+  - package-ecosystem: github-actions
+    directory: /templates/workflows
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 1
+    groups:
+      github_actions_updates:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    target-branch: main
+    labels:
+      - version-update
+      - dependencies
+  #  templates/workflows github-actions security updates
+  - package-ecosystem: github-actions
+    directory: /templates/workflows
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/Chicago
+    allow:
+      - dependency-type: direct
+    open-pull-requests-limit: 0
+    labels:
+      - security-update
+      - dependencies
+    groups:
+      prodsec:
+        applies-to: security-updates
+        update-types:
+          - minor
+          - patch

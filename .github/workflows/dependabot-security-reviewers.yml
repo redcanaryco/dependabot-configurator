@@ -1,0 +1,57 @@
+name: Assign Security Reviewers
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  detect-security-update:
+    # CUSTOMIZE: Update runner labels for your organization
+    runs-on: [ubuntu-latest] # Change as needed
+    if: github.actor == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Check if security update
+        id: check-security
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            console.log(`Checking PR #${context.issue.number} for security-update label`);
+            const hasSecurityLabel = pr.labels.some(label =>
+              label.name === 'security-update'
+            );
+
+            console.log(`Security detection: Found security-update label: ${hasSecurityLabel}`);
+
+            core.setOutput('result', hasSecurityLabel);
+            return hasSecurityLabel;
+
+      - name: Trigger security reviewer assignment
+        if: steps.check-security.outputs.result == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            console.log('Triggering security reviewer assignment bridge workflow');
+
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'security-reviewer-assignment',
+              client_payload: {
+                pr_number: context.issue.number,
+                repository_name: `${context.repo.owner}/${context.repo.repo}`
+              }
+            });
+
+            console.log('Successfully triggered bridge workflow');

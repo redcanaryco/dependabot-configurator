@@ -1,0 +1,38 @@
+# Sample configuration file for Dependabot Configurator settings
+
+# Ignore entry for a Python package
+# - ignore-dependency:
+#   - package-ecosystem: "pip"
+#     dependency-name: "github.com/aws/aws-sdk-go-v2*"
+#     update-types:
+#       - "version-update:semver-patch"
+
+# Ignore entry for a directory(s)
+# - ignore-directory: ["/vendor/", "/node_modules/"]
+
+# Ignore version updates for files matching specific patterns
+# (Security updates will still be processed for these files)
+# - ignore-version-updates-for-files:
+#   - "requirements_prod.txt" # Ignore version updates for any file named this
+#   - "*_dev.txt"           # Ignore version updates for any file ending in _dev.txt
+#   - "package-lock.json"   # Example for npm
+
+# Custom files to manually add to dependabot configuration
+- custom-files:
+    - path: "templates/workflows/dependabot-security-reviewers-bridge.yml"
+      manager: "github-actions"
+    - path: "templates/workflows/dependabot-security-reviewers.yml"
+      manager: "github-actions"
+# Registry configurations for authenticated registries
+# - registries:
+#     - name: "pypi-mirror"
+#       type: "python-index"
+#       url: "https://pypi.example.com/simple"
+#       username: "pypi-user"
+#       password: "${{ secrets.PYPI_PASSWORD }}"
+#       applies-to: ["pip"]
+#     - name: "universal-git"
+#       type: "git"
+#       url: "https://github.com/"
+#       username: "git-user"
+#       password: "${{ secrets.GIT_TOKEN }}"

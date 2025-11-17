@@ -1,0 +1,101 @@
+name: Security Reviewer Assignment Bridge
+on:
+  workflow_call:
+    secrets:
+      ORG_CONFIGURATOR_APP_ID:
+        required: true
+      ORG_CONFIGURATOR_APP_PRIVATE_KEY:
+        required: true
+    inputs:
+      pr_number:
+        description: "Pull request number"
+        type: number
+        required: true
+      repository_name:
+        description: "Repository name (owner/repo format)"
+        type: string
+        required: true
+
+jobs:
+  assign-security-team:
+    # CUSTOMIZE: Update runner labels for your organization if self-hosting and desired.
+    runs-on: [ubuntu-latest]
+    steps:
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        with:
+          app-id: ${{ secrets.ORG_CONFIGURATOR_APP_ID }}
+          private-key: ${{ secrets.ORG_CONFIGURATOR_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Verify security update and assign team
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ steps.generate_token.outputs.token }}
+          script: |
+            const [owner, repo] = '${{ inputs.repository_name }}'.split('/');
+            const prNumber = ${{ inputs.pr_number }};
+
+            console.log(`Processing security reviewer assignment for ${owner}/${repo}#${prNumber}`);
+
+            try {
+              // Double-check that this is still a security update
+              const { data: pr } = await github.rest.pulls.get({
+                owner: owner,
+                repo: repo,
+                pull_number: prNumber
+              });
+
+              const hasSecurityLabel = pr.labels.some(label =>
+                label.name === 'security-update'
+              );
+
+              if (!hasSecurityLabel) {
+                console.log('PR no longer has security-update label, skipping team assignment');
+                return;
+              }
+
+              console.log('Confirmed security update, proceeding with team assignment');
+
+              // CUSTOMIZE: Update security team name for your organization
+              // Change 'product-security' to your security team name (e.g., 'security', 'infosec')
+              await github.rest.pulls.requestReviewers({
+                owner: owner,
+                repo: repo,
+                pull_number: prNumber,
+                team_reviewers: ['product-security']
+              });
+
+              // CUSTOMIZE: Update team name in success message
+              // Change 'Product Security' to your security team's display name
+              await github.rest.issues.createComment({
+                owner: owner,
+                repo: repo,
+                issue_number: prNumber,
+                body: '🔒 Product Security team has been automatically assigned to review this security update.'
+              });
+
+              console.log('Successfully assigned product-security team as reviewers');
+
+            } catch (error) {
+              console.error('Failed to assign team reviewers:', error);
+
+              // Fallback: Create comment about the security update even if team assignment fails
+              try {
+                // CUSTOMIZE: Update organization and team references in fallback message
+                // Change '@redcanaryco/product-security' to '@your-org/your-security-team'
+                await github.rest.issues.createComment({
+                  owner: owner,
+                  repo: repo,
+                  issue_number: prNumber,
+                  body: '🔒 **Security Update Detected** - This PR contains security-related dependency updates that require Product Security team review. Please manually assign the @redcanaryco/product-security team for review.\n\n*Automated team assignment failed - please check workflow logs for details.*'
+                });
+                console.log('Created fallback comment for manual team assignment');
+              } catch (commentError) {
+                console.error('Failed to create fallback comment:', commentError);
+              }
+
+              // Re-throw the original error to mark the workflow as failed
+              throw error;
+            }

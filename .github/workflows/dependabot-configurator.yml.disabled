@@ -1,0 +1,24 @@
+name: Dependabot Configurator
+on:
+  # ============================================================================
+  # TEMPLATE REPOSITORY NOTICE
+  # ============================================================================
+  # This workflow is DISABLED in the public template repository to prevent
+  # accidental execution before proper setup. 
+  #
+  # Review the README installation instructions for proper installation in your org.
+  # ============================================================================
+
+  # schedule:
+  #   - cron: "0 10 * * 5" # Runs every Friday at 10:00 UTC
+  # workflow_dispatch:
+
+jobs:
+  dependabot-configurator:
+    uses: redcanaryco/dependabot-configurator/.github/workflows/dependabot-configurator-reusable-workflow.yml@main
+    with:
+      MAIN_BRANCH: ${{ github.ref_name }}
+      OPEN_PULL_REQUESTS_LIMIT: 1 # Set your desired limit. This applies to version updates only. 0 is none.
+    secrets:
+      ORG_CONFIGURATOR_APP_ID: ${{ secrets.ORG_CONFIGURATOR_APP_ID }}
+      ORG_CONFIGURATOR_APP_PRIVATE_KEY: ${{ secrets.ORG_CONFIGURATOR_APP_PRIVATE_KEY }}

@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v5.0.0"
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-case-conflict
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        args: [--profile, black]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.3
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/PyCQA/flake8
+    rev: "7.2.0"
+    hooks:
+      - id: flake8
+  - repo: https://github.com/trufflesecurity/truffleHog
+    rev: v3.88.20
+    hooks:
+      - id: trufflehog
+        args: [--max-depth, "1"]

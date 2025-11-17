@@ -1,0 +1,18 @@
+name: Security Reviewer Assignment Bridge
+
+on:
+  repository_dispatch:
+    types:
+      - security-reviewer-assignment
+
+jobs:
+  assign-security-reviewers:
+    # CUSTOMIZE: Update this to point to your organization's fork
+    # Change 'redcanaryco/dependabot-configurator' to 'your-org/dependabot-configurator'
+    uses: redcanaryco/dependabot-configurator/.github/workflows/dependabot-security-reviewers-bridge-reusable.yml@main
+    with:
+      pr_number: ${{ github.event.client_payload.pr_number }}
+      repository_name: ${{ github.event.client_payload.repository_name }}
+    secrets:
+      ORG_CONFIGURATOR_APP_ID: ${{ secrets.ORG_CONFIGURATOR_APP_ID }}
+      ORG_CONFIGURATOR_APP_PRIVATE_KEY: ${{ secrets.ORG_CONFIGURATOR_APP_PRIVATE_KEY }}

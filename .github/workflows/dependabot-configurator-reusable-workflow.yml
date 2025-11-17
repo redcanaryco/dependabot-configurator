@@ -1,0 +1,217 @@
+name: dependabot-configurator-reusable-workflow
+
+on:
+  workflow_call:
+    secrets:
+      ORG_CONFIGURATOR_APP_ID:
+        required: true
+      ORG_CONFIGURATOR_APP_PRIVATE_KEY:
+        required: true
+    inputs:
+      MAIN_BRANCH:
+        description: "The main branch of the repository (e.g., main, master)"
+        type: string
+        required: true
+      OPEN_PULL_REQUESTS_LIMIT:
+        description: "The maximum number of open pull requests Dependabot should create for version updates"
+        type: number
+        required: true
+      TRANSITIVE_SECURITY:
+        description: "Whether to enable security updates for transitive dependencies"
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs:
+      MAIN_BRANCH:
+        description: "The main branch of the repository (e.g., main, master)"
+        type: string
+        required: true
+      OPEN_PULL_REQUESTS_LIMIT:
+        description: "The maximum number of open pull requests Dependabot should create for version updates"
+        type: number
+        required: true
+      TRANSITIVE_SECURITY:
+        description: "Whether to enable security updates for transitive dependencies"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  update-dependabot:
+    # CUSTOMIZE: Update runner labels for your organization
+    runs-on: [self-hosted, linux, x64] # Change as needed
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Caller Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ inputs.MAIN_BRANCH }}
+          path: caller-repo
+
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        with:
+          app-id: ${{ secrets.ORG_CONFIGURATOR_APP_ID }}
+          private-key: ${{ secrets.ORG_CONFIGURATOR_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Ensure Dependabot Labels Exist
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ steps.generate_token.outputs.token }}
+          script: |
+            const labels = [
+              {
+                name: 'security-update',
+                color: 'd73a4a',
+                description: 'Security-related dependency updates'
+              },
+              {
+                name: 'version-update',
+                color: '0366d6',
+                description: 'Version-related dependency updates'
+              }
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name
+                });
+                console.log(`Label '${label.name}' already exists`);
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description
+                  });
+                  console.log(`Created label '${label.name}'`);
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+      - name: Checkout Dependabot Configurator
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          # CUSTOMIZE: Update this to point to your organization's fork
+          # Change 'redcanaryco/dependabot-configurator' to 'your-org/dependabot-configurator'
+          repository: redcanaryco/dependabot-configurator
+          ref: main
+          path: reusable-repo
+          fetch-depth: 1
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Install Pinact
+        run: |
+          tar -xzf pinact_linux_amd64v2_2_0.tar.gz
+          chmod +x pinact
+          sudo mv pinact /usr/local/bin/
+        working-directory: ./reusable-repo/binaries/
+
+      - name: Set Up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+
+      - name: Install Dependabot Configurator Dependencies
+        run: |
+          poetry install --no-root
+        working-directory: ./reusable-repo/app/dependabot-configurator/
+
+      - name: Run Dependabot Update Script
+        run: |
+          poetry run python generate.py \
+          --main-branch ${{ inputs.MAIN_BRANCH }} \
+          --open-pull-requests-limit ${{ inputs.OPEN_PULL_REQUESTS_LIMIT }} \
+          --repo-path ../../../caller-repo/ \
+          --transitive-security ${{ inputs.TRANSITIVE_SECURITY }}
+        working-directory: ./reusable-repo/app/dependabot-configurator/
+
+      - name: Run pinact on actions
+        # Hacky. This allows poetry to run the pinact script and points it to the workflow directory of the caller-repo
+        # The repo path is backed out three times to get to the root of the runner and then enters the caller-repo.
+        run: |
+          poetry run python pinact.py \
+          --repo-path ../../../caller-repo/.github/workflows \
+        working-directory: ./reusable-repo/app/dependabot-configurator/
+        env:
+          # CUSTOMIZE: Update this to your organization name
+          # Change 'redcanaryco' to your organization prefix (e.g., 'acme-corp')
+          ORGANIZATION_PREFIX: redcanaryco
+
+      - name: Copy Security Workflow Templates
+        run: |
+          cp ./reusable-repo/templates/workflows/dependabot-security-reviewers.yml ./caller-repo/.github/workflows/
+          cp ./reusable-repo/templates/workflows/dependabot-security-reviewers-bridge.yml ./caller-repo/.github/workflows/
+
+      - name: Check and Update Repository Migration
+        id: check_migration
+        run: |
+          WORKFLOW_FILE="./caller-repo/.github/workflows/dependabot-configurator.yml"
+          if [ -f "$WORKFLOW_FILE" ]; then
+            if grep -q "uses: redcanaryco/dependabot-configurator/.github" "$WORKFLOW_FILE"; then
+              echo "Old repository reference detected, updating..."
+              cp ./reusable-repo/templates/workflows/dependabot-configurator.yml "$WORKFLOW_FILE"
+              echo "WORKFLOW_UPDATED=true" >> $GITHUB_ENV
+              echo "::set-output name=updated::true"
+            else
+              echo "Workflow already uses new reference or has custom configuration"
+              echo "::set-output name=updated::false"
+            fi
+          else
+            echo "Workflow file not found, no update needed"
+            echo "::set-output name=updated::false"
+          fi
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: |
+          echo "user-id=$(gh api "/users/${{ steps.generate_token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Configure Git for GitHub App Commit Signing
+        run: |
+          git config --global user.name "${{ steps.generate_token.outputs.app-slug }}[bot]"
+          git config --global user.email "${{ steps.get-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com"
+        working-directory: ./caller-repo
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          commit-message: "Update Dependabot.yml"
+          path: caller-repo
+          title: "Update Dependabot Configuration and Security Workflows"
+          committer: "${{ steps.generate_token.outputs.app-slug }}[bot] <${{ steps.get-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com>"
+          author: "${{ steps.generate_token.outputs.app-slug }}[bot] <${{ steps.get-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com>"
+          signoff: true
+          sign-commits: true
+          body: |
+            ## Update Dependabot Configuration and Security Workflow
+
+            This PR updates the repository's Dependabot configuration and adds automated security review capabilities.
+
+            📖 **Documentation**: https://github.com/redcanaryco/dependabot-configurator
+
+          branch: update-dependabot-${{ github.run_number }}
+          # CUSTOMIZE: Update this to your organization's security team
+          # Change 'redcanaryco/product-security' to 'your-org/your-security-team'
+          reviewers: redcanaryco/product-security
