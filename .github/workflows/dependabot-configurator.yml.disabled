@@ -4,7 +4,7 @@ on:
   # TEMPLATE REPOSITORY NOTICE
   # ============================================================================
   # This workflow is DISABLED in the public template repository to prevent
-  # accidental execution before proper setup. 
+  # accidental execution before proper setup.
   #
   # Review the README installation instructions for proper installation in your org.
   # ============================================================================

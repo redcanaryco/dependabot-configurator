@@ -11,18 +11,6 @@
   </p>
 </div>
 
-> [!IMPORTANT]  
-> **Template Repository Notice**
->
-> This is a template repository for organizations to fork and customize. To prevent accidental execution,
-> the main workflow file has been moved to the templates directory.
->
-> **After forking this repository:**
->
-> 1. Copy the workflow template from `templates/workflows/dependabot-configurator.yml` to `.github/workflows/dependabot-configurator.yml`
-> 2. Update `YOUR_ORG` references to your organization name
-> 3. Follow the complete setup guide below
-
 ## Overview
 
 Dependabot Configurator makes Dependabot actually useful for engineering and security teams while giving both teams control and ownership to the things they care about. [You can read why Configurator was created and use cases it solves on the Red Canary announcement blog post.](https://redcanary.com/blog/threat-detection/dependabot-configurator/)
