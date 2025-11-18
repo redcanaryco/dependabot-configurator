@@ -23,6 +23,8 @@ For all these reasons, engineering teams often mute or ignore dependabot and nev
 
 Dependabot Configurator does all the heavy lifting to create an optimized configuration for engineering teams and using dependabot configurator is very simple. Dependabot Configurator is an action that runs weekly. When run in your repository, it will check out your repository's code, crawl through it, build a highly-optimized dependabot configuration file, and then open a PR against your repository to update the configuration file.
 
+<img src="./images/configurator-pr.png" alt="PR with reviewer tagging" width="600" class="center">
+
 ## Table of Contents
 
 - [Features](#features)
