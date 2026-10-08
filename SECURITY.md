@@ -16,9 +16,9 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-As mentioned in our [responsible disclosure policy](https://redcanary.com/responsible-disclosure/) we do not have a bug bounty program or offer any compensation for vulnerability reports but we do appreciate you reporting issues!
+As mentioned in our [Vulnerability Disclosure Program](https://www.zscaler.com/security/vulnerability-disclosure-program) we have a bug bounty program and we may offer compensation for vulnerability reports. We do appreciate you reporting issues!
 
-1. **Email**: Send details to security@redcanary.com
+1. **Email**: Send details to security@zscaler.com
 2. **Private disclosure**: Use GitHub's private vulnerability reporting feature
 
 ### What to Include
