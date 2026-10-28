@@ -58,25 +58,38 @@ jobs:
 
               console.log('Confirmed security update, proceeding with team assignment');
 
-              // CUSTOMIZE: Update security team name for your organization
-              // Change 'product-security' to your security team name (e.g., 'security', 'infosec')
-              await github.rest.pulls.requestReviewers({
-                owner: owner,
-                repo: repo,
-                pull_number: prNumber,
-                team_reviewers: ['product-security']
-              });
+              // CUSTOMIZE: Update security team names for your organization
+              // Each team is requested separately, so a team without access to the
+              // repository is skipped instead of failing the whole request.
+              const securityTeams = ['product-security', 'systems-engineering', 'cso-leadership'];
+              const assignedTeams = [];
 
-              // CUSTOMIZE: Update team name in success message
-              // Change 'Product Security' to your security team's display name
+              for (const team of securityTeams) {
+                try {
+                  await github.rest.pulls.requestReviewers({
+                    owner: owner,
+                    repo: repo,
+                    pull_number: prNumber,
+                    team_reviewers: [team]
+                  });
+                  assignedTeams.push(team);
+                } catch (teamError) {
+                  core.warning(`Could not assign ${team} as reviewer: ${teamError.message}`);
+                }
+              }
+
+              if (assignedTeams.length === 0) {
+                throw new Error('No security team could be assigned as reviewer');
+              }
+
               await github.rest.issues.createComment({
                 owner: owner,
                 repo: repo,
                 issue_number: prNumber,
-                body: '🔒 Product Security team has been automatically assigned to review this security update.'
+                body: `🔒 Security teams automatically assigned to review this security update: ${assignedTeams.join(', ')}.`
               });
 
-              console.log('Successfully assigned product-security team as reviewers');
+              console.log(`Successfully assigned security teams as reviewers: ${assignedTeams.join(', ')}`);
 
             } catch (error) {
               console.error('Failed to assign team reviewers:', error);
@@ -84,12 +97,11 @@ jobs:
               // Fallback: Create comment about the security update even if team assignment fails
               try {
                 // CUSTOMIZE: Update organization and team references in fallback message
-                // Change '@redcanaryco/product-security' to '@your-org/your-security-team'
                 await github.rest.issues.createComment({
                   owner: owner,
                   repo: repo,
                   issue_number: prNumber,
-                  body: '🔒 **Security Update Detected** - This PR contains security-related dependency updates that require Product Security team review. Please manually assign the @redcanaryco/product-security team for review.\n\n*Automated team assignment failed - please check workflow logs for details.*'
+                  body: '🔒 **Security Update Detected** - This PR contains security-related dependency updates that require security team review. Please manually assign @redcanaryco/product-security, @redcanaryco/systems-engineering or @redcanaryco/cso-leadership for review.\n\n*Automated team assignment failed - please check workflow logs for details.*'
                 });
                 console.log('Created fallback comment for manual team assignment');
               } catch (commentError) {
