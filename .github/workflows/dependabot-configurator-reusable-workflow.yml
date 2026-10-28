@@ -213,5 +213,5 @@ jobs:
 
           branch: update-dependabot-${{ github.run_number }}
           # CUSTOMIZE: Update this to your organization's security team
-          # Change 'redcanaryco/product-security' to 'your-org/your-security-team'
-          reviewers: redcanaryco/product-security
+          # Change these teams to your organization's security teams
+          reviewers: redcanaryco/product-security, redcanaryco/systems-engineering, redcanaryco/cso-leadership

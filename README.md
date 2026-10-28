@@ -54,7 +54,7 @@ Dependabot Configurator does all the heavy lifting to create an optimized config
 
 - **Direct Dependencies Only**: Only receive direct dependency updates! No more time-consuming, impossible to uplift transitive dependencies. Optionally, teams may opt-in for security-related transitive dependencies.
 - **Security-First Approach**: If your dependencies are in a bad state, you can disable all version updates and only get security updates.
-- **Security Team Integration**: Security updates automatically tag Product-Security. Product Security can then respond in the PR and provide guidance.
+- **Security Team Integration**: Security updates automatically tag the Product Security, Systems Engineering and CSO Leadership teams. They can then respond in the PR and provide guidance.
 - **Advanced Registry Support**: Configure custom registries with authentication for private package repositories, with automatic ecosystem-specific assignment.
 - **Flexible Ignore Rules**: Ignore certain directories like `./spec/` or particularly loud packages with granular control.
 - **Custom File Specifications**: Manually specify files that should be included in the Dependabot configuration, even if they don't match standard patterns.
@@ -430,8 +430,8 @@ Update the following clearly marked customization points in your fork:
 4. **Security Team Reviewer** (Line ~185):
    ```yaml
    # CUSTOMIZE: Update this to your organization's security team
-   # Change 'redcanaryco/product-security' to 'your-org/your-security-team'
-   reviewers: redcanaryco/product-security
+   # Change these teams to your organization's security teams
+   reviewers: redcanaryco/product-security, redcanaryco/systems-engineering, redcanaryco/cso-leadership
    ```
 
 #### **Security Bridge Template** (`templates/workflows/dependabot-security-reviewers-bridge.yml`)
@@ -455,24 +455,22 @@ Update the following clearly marked customization points in your fork:
 2. **Security Team Name** (Line ~58):
 
    ```yaml
-   # CUSTOMIZE: Update security team name for your organization
-   # Change 'product-security' to your security team name (e.g., 'security', 'infosec')
-   team_reviewers: ["product-security"]
+   # CUSTOMIZE: Update security team names for your organization
+   # Each team is requested separately, so a team without repository access is skipped
+   const securityTeams = ['product-security', 'systems-engineering', 'cso-leadership'];
    ```
 
 3. **Success Message** (Line ~65):
 
    ```yaml
-   # CUSTOMIZE: Update team name in success message
-   # Change 'Product Security' to your security team's display name
-   body: "🔒 Product Security team has been automatically assigned to review this security update."
+   # The success message lists the teams that were assigned
+   body: `🔒 Security teams automatically assigned to review this security update: ${assignedTeams.join(', ')}.`
    ```
 
 4. **Fallback Message** (Line ~76):
    ```yaml
    # CUSTOMIZE: Update organization and team references in fallback message
-   # Change '@redcanaryco/product-security' to '@your-org/your-security-team'
-   body: '🔒 **Security Update Detected** - This PR contains security-related dependency updates that require Product Security team review. Please manually assign the @redcanaryco/product-security team for review.\n\n*Automated team assignment failed - please check workflow logs for details.*'
+   body: '🔒 **Security Update Detected** - This PR contains security-related dependency updates that require security team review. Please manually assign @redcanaryco/product-security, @redcanaryco/systems-engineering or @redcanaryco/cso-leadership for review.\n\n*Automated team assignment failed - please check workflow logs for details.*'
    ```
 
 #### **Security Reviewer Template** (`templates/workflows/dependabot-security-reviewers.yml`)
@@ -491,9 +489,9 @@ Use this checklist to ensure you've updated all necessary customization points:
 - [ ] **Runner labels**: Updated from `[ubuntu-latest]` to your preferred runners
 - [ ] **Repository references**: Changed `redcanaryco/dependabot-configurator` to `your-org/dependabot-configurator`
 - [ ] **Organization prefix**: Updated all instances of `ORGANIZATION_PREFIX: redcanaryco` to `ORGANIZATION_PREFIX: your-org`
-- [ ] **Security team name**: Changed `product-security` to your security team name
-- [ ] **Security team references**: Updated `@redcanaryco/product-security` to `@your-org/your-security-team`
-- [ ] **PR reviewers**: Updated `reviewers: redcanaryco/product-security` to your team
+- [ ] **Security team names**: Changed the `securityTeams` list to your security team names
+- [ ] **Security team references**: Updated the `@redcanaryco/...` team mentions in the fallback message to your teams
+- [ ] **PR reviewers**: Updated the `reviewers:` team list to your teams
 - [ ] **Caller repositories**: Updated workflow references to point to your fork
 
 ### Step 6: Deploy to Your Repositories
@@ -590,12 +588,12 @@ Dependabot Configurator uses GitHub App authentication for improved security:
 
 ### Security Reviewer Workflow
 
-The Dependabot Configurator automatically generates security reviewer assignment workflows that ensure all security updates receive proper Product Security team review. This system uses a sophisticated bridge pattern architecture to overcome GitHub's security limitations with Dependabot-triggered workflows and is a viable, albeit complicated solution after Github retired the reviewers field.
+The Dependabot Configurator automatically generates security reviewer assignment workflows that ensure all security updates receive proper security team review. This system uses a sophisticated bridge pattern architecture to overcome GitHub's security limitations with Dependabot-triggered workflows and is a viable, albeit complicated solution after Github retired the reviewers field.
 
 #### How It Works
 
 1. **Security Update Detection**: Automatically detects Dependabot security updates using the `security-update` label
-2. **Team Assignment**: Assigns the `product-security` team as reviewers to the PR
+2. **Team Assignment**: Assigns the `product-security`, `systems-engineering` and `cso-leadership` teams as reviewers to the PR
 3. **Notification**: Adds informative comments to the PR for visibility
 4. **Error Handling**: Provides clear success/failure feedback
 
@@ -610,7 +608,7 @@ sequenceDiagram
     participant Bridge as Bridge Workflow<br/>(.github/workflows/<br/>dependabot-security-reviewers-bridge.yml)
     participant Reusable as Bridge Reusable Workflow<br/>(.github/workflows/<br/>dependabot-security-reviewers-bridge-reusable.yml)
     participant API as GitHub API
-    participant PS as Product Security Team
+    participant PS as Security Teams
 
     D->>+Det: Creates PR with security-update label
     Det->>Det: Check for security-update label
@@ -620,7 +618,7 @@ sequenceDiagram
     Bridge->>+Reusable: Call reusable workflow with secrets
     Reusable->>+API: Authenticate with GitHub App<br/>(10-minute token)
     API-->>-Reusable: Authentication successful
-    Reusable->>+API: Assign product-security team as reviewers
+    Reusable->>+API: Assign security teams as reviewers
     API-->>-Reusable: Team assignment successful
     Reusable->>+API: Add success comment to PR
     API-->>-Reusable: Comment added
@@ -648,7 +646,7 @@ sequenceDiagram
 **3. Bridge Reusable Workflow** (`.github/workflows/dependabot-security-reviewers-bridge-reusable.yml`):
 
 - Performs GitHub App authentication using organization secrets
-- Assigns the `product-security` team as reviewers
+- Assigns the `product-security`, `systems-engineering` and `cso-leadership` teams as reviewers
 - Creates success/failure comments on the PR
 - Handles all GitHub API interactions with elevated permissions
 
@@ -683,7 +681,7 @@ graph TB
     F -->|Python Script| G[Generate dependabot.yml<br/>Optimized Configuration]
     C -->|Copy Templates| H[Security Workflows<br/>Bridge Pattern Files]
     C -->|Security Enhancement| I[Pin Actions to SHA256<br/>Enhanced Security]
-    G --> J[Create Pull Request<br/>Auto-assign Product Security]
+    G --> J[Create Pull Request<br/>Auto-assign Security Teams]
     H --> J
     I --> J
     J -->|Review & Merge| K[Updated Repository<br/>Optimized Dependabot Config]
