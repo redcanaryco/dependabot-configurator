@@ -1,3 +1,5 @@
+default_language_version:
+  python: python3.11
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v5.0.0"
@@ -25,8 +27,7 @@ repos:
     rev: "7.2.0"
     hooks:
       - id: flake8
-  - repo: https://github.com/trufflesecurity/truffleHog
+  - repo: https://github.com/trufflesecurity/trufflehog
     rev: v3.88.20
     hooks:
       - id: trufflehog
-        args: [--max-depth, "1"]
